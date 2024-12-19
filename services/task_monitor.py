@@ -60,7 +60,7 @@ class TaskMonitor:
                 try:
                     tasks = db.query(Task).filter(
                         Task.status.in_([TaskStatus.TRAINING, TaskStatus.PENDING])
-                    ).all()
+                    ).limit(10).all()
 
                     if tasks:
                         # logger.info(f"发现 {len(tasks)} 个待监控任务")

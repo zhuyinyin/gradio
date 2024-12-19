@@ -3,7 +3,7 @@ from PIL import Image
 from io import BytesIO
 import os
 from config import Config
-from pg_db import Task, TaskStatus, get_db
+from pg_db import Task, TaskStatus, get_db, check_task_name_exists
 import aiohttp
 import json
 
@@ -27,6 +27,10 @@ class TrainingManager:
 
         if not images:
             return "请上传至少一张图片来开始训练。"
+
+        # 检查任务名称是否已存在
+        if check_task_name_exists(job_name):
+            return f"任务名称 '{job_name}' 已存在，请使用其他名称。"
 
         try:
             if self.session is None:
