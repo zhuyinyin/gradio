@@ -2,7 +2,7 @@ import os
 
 class Config:
     """应用配置类"""
-    TOOLKIT_URL = os.getenv('TOOLKIT_URL', 'http://192.168.0.121:7861')
+    TOOLKIT_URL = os.getenv('TOOLKIT_URL', 'http://172.25.0.1:7861')
     VALID_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png']
     VALID_CONFIG_EXTENSIONS = ['.yaml', '.yml']
     MONITOR_INTERVAL = 10  # 监控间隔时间（秒）

@@ -6,7 +6,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - TOOLKIT_URL=http://192.168.0.121:7861
+      # - TOOLKIT_URL=http://192.168.0.121:7861
       - DATABASE_URL=postgresql://gradio:gradioEVENT12@db:5432/training_db
     depends_on:
       - db
