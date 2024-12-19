@@ -1,0 +1,43 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "o000",
+            // "type": "python",
+            "type": "debugpy",
+            // 自动检测路径
+            "python":"${command:python.interpreterPath}",
+            // "stopOnEntry": false, // 程序第一行暂停
+            "request": "launch",
+            "program": "${workspaceRoot}/app.py",
+            "console": "integratedTerminal",
+            // "args": [
+            //     "-c",
+            //     "debian/odoo.conf",
+            //     "--dev",
+            //     "xml",
+            // ],
+            // "gevent": true,
+            // "env": {
+            //     "GEVENT_SUPPORT": "True"
+            // },
+            // "env": {
+            //     "GEVENT_SUPPORT": "True"
+            // },
+            "envFile": "${workspaceFolder}/.venv/bin/python3.8.10",
+
+            "justMyCode": false,
+            // "sudo": true,
+        },
+        {
+            "name": "Attach to Odoo",
+            "type": "debugpy",
+            "request": "attach",
+            "connect":{
+                "host": "127.0.0.1",
+                "port": 46457
+            }
+        },
+
+    ]
+}

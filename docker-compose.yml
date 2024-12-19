@@ -1,0 +1,42 @@
+version: '3.8'
+# docker-compose build
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - TOOLKIT_URL=http://192.168.0.121:7861
+      - DATABASE_URL=postgresql://gradio:gradioEVENT12@db:5432/training_db
+    depends_on:
+      - db
+    networks:
+      - app-network
+    volumes:
+      - ./config.py:/app/config.py
+      - ./pg_db.py:/app/pg_db.py
+      - ./services:/app/services
+      - ./ui:/app/ui
+      - ./app.py:/app/app.py
+    restart: unless-stopped
+
+  db:
+    image: postgres:14.3
+    environment:
+      - POSTGRES_DB=training_db
+      - POSTGRES_USER=gradio
+      - POSTGRES_PASSWORD=gradioEVENT12
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data: 
