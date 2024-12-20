@@ -11,194 +11,236 @@ from sqlalchemy.orm import Session
 def create_ui(training_manager):
     """创建 Gradio 界面"""
     with gr.Blocks() as demo:
-        with gr.Box():
-            # 确保按钮在右边
-            with gr.Row():
-                with gr.Column(min_width=100):  # 放置第一个按钮
-                    home_btn = gr.Button("主页")
-                with gr.Column(min_width=200):  # 放置第二个按钮
-                    training_result_btn = gr.Button("训练任务表")
-                gr.Column(scale=20)  # 中间的占位
-
-        with gr.Box().style(full_width=True) as home_page:
-            with gr.Row() as pyrows:
-                pyrows.style(full_width=True)
-                # 左侧边栏
-                with gr.Column(scale=1):
-                    gr.Markdown("## 参数设置")
-
-                    model_dropdown = gr.Dropdown(["AI Toolkit", "Fux", "F.1_dev-fp8"], label="模型选择")
-                    job_name = gr.Textbox(label="任务名称(请勿重复)")
-                    advanced_settings_btn = gr.Button("高级参数设置")
-
-                    # 高级设置弹窗
-                    with gr.Box(visible=False) as advanced_settings:
-                        advanced_inputs = {}
-                        with gr.Row():
+        # 使用 Tabs 替代手动页面切换
+        with gr.Tabs() as tabs:
+            # 主页 Tab
+            with gr.Tab("主页"):
+                with gr.Row():
+                    # 左侧参数设置
+                    with gr.Column(scale=1):
+                        gr.Markdown("## 参数设置")
+                        model_dropdown = gr.Dropdown(
+                            choices=["AI Toolkit", "Fux", "F.1_dev-fp8"],
+                            label="模型选择",
+                            value="AI Toolkit"
+                        )
+                        job_name = gr.Textbox(
+                            label="任务名称",
+                            placeholder="请输入不重复的任务名称"
+                        )
+                        
+                        # 使用 Accordion ���钮
+                        with gr.Accordion("高级参数设置", open=False) as advanced_settings:
+                            advanced_inputs = {}
                             for param, value in Config.ADVANCED_SETTINGS.items():
                                 if isinstance(value, bool):
-                                    f1 = gr.Checkbox(label=param, value=value)
-                                    advanced_inputs[param] = f1
+                                    advanced_inputs[param] = gr.Checkbox(
+                                        label=param,
+                                        value=value
+                                    )
                                 elif isinstance(value, (int, float)):
-                                    f2 = gr.Number(label=param, value=value)
-                                    advanced_inputs[param] = f2
+                                    advanced_inputs[param] = gr.Number(
+                                        label=param,
+                                        value=value
+                                    )
                                 else:
-                                    f3 = gr.Textbox(value=str(value), label=param)
-                                    advanced_inputs[param] = f3
+                                    advanced_inputs[param] = gr.Textbox(
+                                        label=param,
+                                        value=str(value)
+                                    )
 
-                # 右侧边栏
-                with gr.Column(scale=2):
-                    gr.Markdown("## 图片上传与训练")
+                    # 右侧上传区域
+                    with gr.Column(scale=2):
+                        gr.Markdown("## 图片上传与训练")
+                        with gr.Row():
+                            image_upload = gr.File(
+                                label="上传文件",
+                                file_types=["image", "yaml", "yml"],
+                                file_count="multiple",
+                                type="filepath",
+                                height=100,
+                                scale=1,
+                                elem_classes="file-upload",
+                                interactive=True
+                            )
+                        
+                        with gr.Row():
+                            image_preview = gr.Gallery(
+                                label="图片预览",
+                                columns=[2, 3],
+                                height=300,
+                                show_label=True,
+                                preview=True,
+                                allow_preview=True,
+                                show_download_button=True,
+                                object_fit="contain",
+                                elem_classes="image-preview"
+                            )
+                        
+                        with gr.Row():
+                            start_training_btn = gr.Button(
+                                "提交训练任务",
+                                variant="primary",  # 使用主要样式
+                                size="lg",         # ��尺寸按钮
+                                scale=1
+                            )
+                        with gr.Row():
+                            training_result = gr.Textbox(
+                                label="训练结果",
+                                interactive=False,
+                                show_copy_button=True,
+                                scale=1
+                            )
 
-                    image_upload = gr.File(label="上传文件", file_types=['file'], file_count="multiple")
-                    image_preview = gr.Gallery(label="图片预览", elem_id="image-gallery")
-                    start_training_btn = gr.Button("提交训练任务")
-
-                    # 训练结果
-                    training_result = gr.Textbox(label="训练结果", interactive=False)
-
-        # 任务表页面
-        with gr.Box(visible=False) as training_page:
-            gr.Markdown("## 训练任务列表")
-            
-            # 添加结果图片展示组件（弹窗）
-            with gr.Box(visible=True) as results_gallery_box:
-                results_gallery = gr.Gallery(
-                    label="训练结果图片",
-                    show_label=True,
-                    elem_id="results-gallery"
+            # 任务列表 Tab
+            with gr.Tab("训练任务表"):
+                task_list_data = get_task_list()
+                task_list_output = gr.Dataframe(
+                    value=task_list_data["data"],
+                    headers=task_list_data["headers"],
+                    interactive=True,
+                    wrap=True,
+                    height=400,
+                    # column_config={
+                    #     "ID": {"width": 80},
+                    #     "Name": {"width": 200},
+                    #     "Status": {"width": 120},
+                    #     "Results": {"width": 120},
+                    #     "Created": {"width": 180},
+                    #     "Updated": {"width": 180}
+                    # }
                 )
-                close_gallery_btn = gr.Button("关闭")
 
-            with gr.Row():
-                # 任务列表
-                task_list_output = gr.DataFrame(
-                    value=get_task_list(),
-                    label="任务列表",
-                    interactive=True,  # 允许选择
-                    wrap=True
-                )
-                # 查看结果按钮
-                # view_results_btn = gr.Button("查看选中任务结果")
+                # 结果图片展示
+                with gr.Group(visible=False) as results_gallery_box:
+                    results_gallery = gr.Gallery(
+                        label="训练结果图片",
+                        columns=[2, 3, 4],
+                        height="auto",
+                        preview=True,
+                        show_share_button=True,
+                        allow_preview=True
+                    )
+                    close_gallery_btn = gr.Button("关闭")
 
-        # 使用 gr.State() 来存储当前可见状态
-        visibility_state = gr.State(False)
-
-        # 回调函数：点击按钮切换界面
-        def switch_page_and_update_tasks():
-            """切换到任务列表页面"""
-            return (
-                gr.update(visible=False),  # home_page
-                gr.update(visible=True),   # training_page
-                get_task_list()  # task_list_output
-            )
-
-        def switch_tohome():
-            """切换到主页面"""
-            return gr.update(visible=True), gr.update(visible=False)
-
-        def toggle_advanced_settings(current_visibility):
-            """切换高级设置的可见性"""
-            return gr.update(visible=not current_visibility), not current_visibility
-
+        # 图片处理函数
         def process_images(files):
-            """处理上传的图片并返回适用于 Gradio 预览的格式"""
-            images = []
-            for file in files:
-                file_extension = os.path.splitext(file.name)[-1].lower()
-                if file_extension in Config.VALID_IMAGE_EXTENSIONS:
-                    try:
-                        img = Image.open(file.name)
-                        img = img.convert("RGB")
-                        images.append(img)
-                    except Exception as e:
-                        print(f"处理文件 {file.name} 时出错: {e}")
-                        continue
-            return images
+            """处理上传的图片"""
+            try:
+                if not files:
+                    return gr.update(value=None)
+                
+                # 过滤并处理图片文件
+                image_files = []
+                
+                for file in files:
+                    if isinstance(file, str):  # 如果是文件路径
+                        if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                            image_files.append(file)
+                    else:  # 如果是文件对象
+                        if file.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                            image_files.append(file.name)
+                
+                print(f"找到 {len(image_files)} 个图片文件")
+                return gr.update(value=image_files if image_files else None)
+                
+            except Exception as e:
+                print(f"图片处理出错: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                return gr.update(value=None)
 
-        async def _submit_training(*args):
-            """异步提交训练"""
-            return await training_manager.submit_training(*args)
+        def view_task_results(evt: gr.SelectData):
+            """查看任务结果"""
+            try:
+                if evt.index[1] != 3:  # Results 列索引
+                    return [gr.update(visible=False), None]
+                
+                task_id = int(evt.value[0])    # ID 在第一列
+                result_text = evt.value[3]     # Results 在第四列
+                
+                if not result_text.startswith("✅"):
+                    return [gr.update(visible=False), None]
 
-        def submit_training(*args):
-            """同步包装函数"""
-            nest_asyncio.apply()
-            loop = asyncio.get_event_loop()
-            return loop.run_until_complete(_submit_training(*args))
+                db = next(get_db())
+                try:
+                    task = db.query(Task).filter(Task.id == task_id).first()
+                    if task and task.result_images:
+                        image_urls = [img["url"] for img in task.result_images]
+                        return [gr.update(visible=True), image_urls]
+                finally:
+                    db.close()
+            except Exception as e:
+                print(f"处理任务结果时出错: {str(e)}")
+            return [gr.update(visible=False), None]
 
-        start_training_btn.click(
-            fn=submit_training,
-            inputs=[model_dropdown, job_name, image_upload] + list(advanced_inputs.values()),
-            outputs=training_result
-        )
+        # 事件处理函数
+        async def submit_training(*args):
+            """提交训练任务"""
+            try:
+                print("开始处理训练提交...")
+                print(f"接收到的参数: {args}")
+                
+                model, name, files, *advanced_args = args
+                
+                if not files:
+                    return gr.update(value="请上传文件")
+                if not name:
+                    return gr.update(value="请输入任务名称")
+
+                print(f"模型: {model}, 任务名: {name}, 文件数: {len(files) if files else 0}")
+
+                # 使用 nest_asyncio 确保异步调用正常工作
+                nest_asyncio.apply()
+                
+                # 调用训练管理器提交任务
+                result = await training_manager.submit_training(
+                    model, name, files, *advanced_args
+                )
+                
+                print(f"训练任务提交结果: {result}")
+                return gr.update(value=result)
+                
+            except Exception as e:
+                print(f"提交训练失败: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                return gr.update(value=f"提交失败: {str(e)}")
 
         # 事件绑定
-        home_btn.click(
-            switch_tohome,
-            outputs=[home_page, training_page]
-        )
-
-        training_result_btn.click(
-            switch_page_and_update_tasks,
-            outputs=[home_page, training_page, task_list_output]
-        )
-
-        advanced_settings_btn.click(
-            toggle_advanced_settings,
-            inputs=visibility_state,
-            outputs=[advanced_settings, visibility_state]
-        )
-
         image_upload.change(
             fn=process_images,
             inputs=image_upload,
-            outputs=image_preview
+            outputs=image_preview,
+            show_progress=False,
+            api_name="process_images",
+            concurrency_limit=5  # 设置并发限制
         )
 
-        # 回调函数：查看结果
-        # def view_task_results(selected_data):
-        #     """查看任务结果"""
-        #     if selected_data is None or len(selected_data) == 0:
-        #         return {
-        #             results_gallery_box: gr.update(visible=False),
-        #             results_gallery: None
-        #         }
-            
-        #     # 获取选中行的任务ID，并转换为Python原生int类型
-        #     task_id = int(selected_data.iloc[0]["ID"])
-            
-        #     db = next(get_db())
-        #     try:
-        #         task = db.query(Task).filter(Task.id == task_id).first()
-        #         if task and task.result_images:
-        #             return {
-        #                 results_gallery_box: gr.update(visible=True),
-        #                 results_gallery: task.result_images
-        #             }
-        #         return {
-        #             results_gallery_box: gr.update(visible=False),
-        #             results_gallery: None
-        #         }
-        #     finally:
-        #         db.close()
+        task_list_output.select(
+            fn=view_task_results,
+            outputs=[results_gallery_box, results_gallery],
+            concurrency_limit=3  # 设置并发限制
+        )
 
-        def close_gallery():
-            """关闭图片展示"""
-            return {
-                results_gallery_box: gr.update(visible=False),
-                results_gallery: None
-            }
-
-        # 绑定事件
-        # view_results_btn.click(
-        #     fn=view_task_results,
-        #     inputs=task_list_output,
-        #     outputs=[results_gallery_box, results_gallery]
-        # )
-        
         close_gallery_btn.click(
-            fn=close_gallery,
-            outputs=[results_gallery_box, results_gallery]
+            fn=lambda: [gr.update(visible=False), None],
+            outputs=[results_gallery_box, results_gallery],
+            concurrency_limit=1  # 设置并发限制
+        )
+
+        start_training_btn.click(
+            fn=submit_training,
+            inputs=[
+                model_dropdown,
+                job_name,
+                image_upload
+            ] + list(advanced_inputs.values()),
+            outputs=training_result,
+            api_name="submit_training",
+            show_progress=True,
+            queue=True,
+            concurrency_limit=1  # 设置并发限制
         )
 
     return demo 

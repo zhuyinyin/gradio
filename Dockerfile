@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 设置环境变量
 ENV PYTHONUNBUFFERED=1

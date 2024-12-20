@@ -2,7 +2,11 @@ version: '3.8'
 # docker-compose build
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     ports:
       - "5000:5000"
     environment:

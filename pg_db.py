@@ -54,18 +54,23 @@ def get_task_list():
     db = next(get_db())
     try:
         tasks = db.query(Task).all()
-        task_list = []
+        # 准备表头和数据
+        headers = ["ID", "Name", "Status", "Results", "Created", "Updated"]
+        data = []
         for task in tasks:
             result_count = len(task.result_images) if task.result_images else 0
-            task_list.append({
-                "ID": task.id,
-                "Name": task.name,
-                "Status": task.status.value,
-                "Results": "查看结果" if result_count > 0 else "无",
-                "Created": task.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "Updated": task.updated_at.strftime("%Y-%m-%d %H:%M:%S")
-            })
-        return pd.DataFrame(task_list)
+            data.append([
+                task.id,                                         # ID
+                task.name,                                       # Name
+                task.status.value,                              # Status
+                "✅ 查看结果" if result_count > 0 else "❌ 无结果",  # Results
+                task.created_at.strftime("%Y-%m-%d %H:%M:%S"),  # Created
+                task.updated_at.strftime("%Y-%m-%d %H:%M:%S")   # Updated
+            ])
+        return {
+            "headers": headers,
+            "data": data
+        }
     finally:
         db.close()
 

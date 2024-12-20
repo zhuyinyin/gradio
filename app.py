@@ -1,4 +1,3 @@
-
 from services.training_service import TrainingManager
 from services.task_monitor import TaskMonitor
 from ui.interface import create_ui
@@ -51,11 +50,15 @@ class Application:
             # 创建并启动 Gradio 界面
             print("启动 Gradio 界面...")
             demo = create_ui(self.training_manager)
+            demo.queue()  # 移除 concurrency_count 参数
             demo.launch(
-                server_name="0.0.0.0", 
-                server_port=5000,
-                share=True,
-                debug=True
+                server_name="0.0.0.0",      # 监听所有网络接口
+                server_port=5000,           # 服务端口
+                share=False,                # 禁用 Gradio 公共链接分享功能
+                show_error=True,            # 在界面上显示详细错误信息
+                show_api=False,             # 禁用 API 文档页面
+                max_threads=10,             # 设置最大线程数
+                auth=None                   # 不使用认证
             )
 
         except Exception as e:
