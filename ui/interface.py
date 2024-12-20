@@ -29,7 +29,7 @@ def create_ui(training_manager):
                             placeholder="请输入不重复的任务名称"
                         )
                         
-                        # 使用 Accordion ���钮
+                        # 使用 Accordion ����钮
                         with gr.Accordion("高级参数设置", open=False) as advanced_settings:
                             advanced_inputs = {}
                             for param, value in Config.ADVANCED_SETTINGS.items():
@@ -81,7 +81,7 @@ def create_ui(training_manager):
                             start_training_btn = gr.Button(
                                 "提交训练任务",
                                 variant="primary",  # 使用主要样式
-                                size="lg",         # ��尺寸按钮
+                                size="lg",         # ����按钮
                                 scale=1
                             )
                         with gr.Row():
@@ -94,34 +94,38 @@ def create_ui(training_manager):
 
             # 任务列表 Tab
             with gr.Tab("训练任务表"):
-                task_list_data = get_task_list()
-                task_list_output = gr.Dataframe(
-                    value=task_list_data["data"],
-                    headers=task_list_data["headers"],
-                    interactive=True,
-                    wrap=True,
-                    height=400,
-                    # column_config={
-                    #     "ID": {"width": 80},
-                    #     "Name": {"width": 200},
-                    #     "Status": {"width": 120},
-                    #     "Results": {"width": 120},
-                    #     "Created": {"width": 180},
-                    #     "Updated": {"width": 180}
-                    # }
-                )
-
-                # 结果图片展示
-                with gr.Group(visible=False) as results_gallery_box:
-                    results_gallery = gr.Gallery(
-                        label="训练结果图片",
-                        columns=[2, 3, 4],
-                        height="auto",
-                        preview=True,
-                        show_share_button=True,
-                        allow_preview=True
+                with gr.Column():
+                    task_list_data = get_task_list()
+                    task_list_output = gr.Dataframe(
+                        value=task_list_data["data"],
+                        headers=task_list_data["headers"],
+                        interactive=False,  # 设置为不可交互
+                        wrap=True,
+                        height=400,
+                        row_count=10
                     )
-                    close_gallery_btn = gr.Button("关闭")
+
+                    # 结果图片展示
+                    with gr.Group(visible=False) as results_gallery_box:
+                        with gr.Row():
+                            gr.Markdown("### 训练结果图片")
+                        with gr.Row():
+                            results_gallery = gr.Gallery(
+                                label="训练结果图片",
+                                columns=[2, 3],
+                                height="auto",
+                                preview=True,
+                                show_share_button=True,
+                                show_download_button=True,
+                                allow_preview=True,
+                                elem_classes="result-gallery"
+                            )
+                        with gr.Row():
+                            close_gallery_btn = gr.Button(
+                                "关闭",
+                                size="sm",
+                                variant="secondary"
+                            )
 
         # 图片处理函数
         def process_images(files):
@@ -153,13 +157,25 @@ def create_ui(training_manager):
         def view_task_results(evt: gr.SelectData):
             """查看任务结果"""
             try:
-                if evt.index[1] != 3:  # Results 列索引
+                # 获取选中行的数据
+                row_index = evt.index[0]    # 行索引
+                col_index = evt.index[1]    # 列索引
+                print(f"选中行: {row_index}, 列: {col_index}, 值: {evt.value}")
+                # 从任务列表中获取当前行的数据
+                task_list_data = get_task_list()
+                try:
+                    row_data = task_list_data["data"][row_index]
+                except IndexError:
+                    print(f"IndexError: 行索引超出范围: {row_index}")
                     return [gr.update(visible=False), None]
                 
-                task_id = int(evt.value[0])    # ID 在第一列
-                result_text = evt.value[3]     # Results 在第四列
+                task_id = int(row_data[0])      # ID 在第一列
+                result_text = row_data[3]       # Results 在第四列
+                
+                print(f"任务ID: {task_id}, 结果状态: {result_text}")
                 
                 if not result_text.startswith("✅"):
+                    print("该任务无结果可查看")
                     return [gr.update(visible=False), None]
 
                 db = next(get_db())
@@ -167,11 +183,17 @@ def create_ui(training_manager):
                     task = db.query(Task).filter(Task.id == task_id).first()
                     if task and task.result_images:
                         image_urls = [img["url"] for img in task.result_images]
-                        return [gr.update(visible=True), image_urls]
+                        print(f"找到 {len(image_urls)} 张结果图片")
+                        return [
+                            gr.update(visible=True),  # 显示图片展示区
+                            image_urls                # 更新图片列表
+                        ]
                 finally:
                     db.close()
             except Exception as e:
                 print(f"处理任务结果时出错: {str(e)}")
+                import traceback
+                traceback.print_exc()
             return [gr.update(visible=False), None]
 
         # 事件处理函数
@@ -207,6 +229,14 @@ def create_ui(training_manager):
                 traceback.print_exc()
                 return gr.update(value=f"提交失败: {str(e)}")
 
+        def refresh_task_list():
+            """刷新任务列表"""
+            task_list_data = get_task_list()
+            return gr.update(
+                value=task_list_data["data"],
+                headers=task_list_data["headers"]
+            )
+
         # 事件绑定
         image_upload.change(
             fn=process_images,
@@ -219,14 +249,12 @@ def create_ui(training_manager):
 
         task_list_output.select(
             fn=view_task_results,
-            outputs=[results_gallery_box, results_gallery],
-            concurrency_limit=3  # 设置并发限制
+            outputs=[results_gallery_box, results_gallery]
         )
 
         close_gallery_btn.click(
             fn=lambda: [gr.update(visible=False), None],
-            outputs=[results_gallery_box, results_gallery],
-            concurrency_limit=1  # 设置并发限制
+            outputs=[results_gallery_box, results_gallery]
         )
 
         start_training_btn.click(
@@ -241,6 +269,12 @@ def create_ui(training_manager):
             show_progress=True,
             queue=True,
             concurrency_limit=1  # 设置并发限制
+        )
+
+        demo.load(
+            fn=refresh_task_list,
+            outputs=task_list_output,
+            every=10  # 每10秒刷新一次
         )
 
     return demo 
