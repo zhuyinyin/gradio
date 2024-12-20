@@ -115,4 +115,4 @@ def check_task_name_exists(task_name: str) -> bool:
 
 
 # 初始化数据库表（重建所有表）
-init_db(drop_all=True)
+init_db(drop_all=False)
