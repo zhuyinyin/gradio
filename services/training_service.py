@@ -39,13 +39,15 @@ class TrainingManager:
             yaml_config = None
             files_to_send = []
 
-            # 处理上传的文件
-            for image in images:
-                file_extension = os.path.splitext(image.name)[-1].lower()
+            # 处理���传的文件
+            for filepath in images:
+                # 获取真实的文件名（去除转义）
+                filename = os.path.basename(filepath)
+                file_extension = os.path.splitext(filename)[1].lower()
                 
                 if file_extension in Config.VALID_CONFIG_EXTENSIONS:
                     # 读取并处理 YAML
-                    with open(image.name, 'r') as f:
+                    with open(filepath, 'r', encoding='utf-8') as f:
                         yaml_config = yaml.safe_load(f)
                         yaml_config["config"]["name"] = job_name
                     
@@ -60,13 +62,18 @@ class TrainingManager:
                     yaml_content = yaml.dump(yaml_config).encode('utf-8')
                     byte_io = BytesIO(yaml_content)
                     byte_io.seek(0)
-                    files_to_send.append(('files', (image.name, byte_io, 'text/yaml')))
+                    files_to_send.append(('files', (filename, byte_io, 'text/yaml')))
 
                 elif file_extension in Config.VALID_IMAGE_EXTENSIONS:
-                    with open(image.name, 'rb') as f:
+                    with open(filepath, 'rb') as f:
                         byte_io = BytesIO(f.read())
                         byte_io.seek(0)
-                        files_to_send.append(('files', (image.name, byte_io, 'image/png')))
+                        files_to_send.append(('files', (filename, byte_io, 'image/png')))
+                elif file_extension == '.txt':
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        byte_io = BytesIO(f.read().encode('utf-8'))
+                        byte_io.seek(0)
+                        files_to_send.append(('files', (filename, byte_io, 'text/plain')))
 
             if not yaml_config:
                 return "请先上传一个 YAML 配置文件。"
@@ -102,7 +109,7 @@ class TrainingManager:
 
     @staticmethod
     def _update_yaml(args, defaults, config):
-        """更新 YAML 配置"""
+        """更��� YAML 配置"""
         options = {
             "save": {},
             "train": {}

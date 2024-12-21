@@ -53,7 +53,9 @@ def get_task_list():
     """查询数据库中的任务并返回"""
     db = next(get_db())
     try:
-        tasks = db.query(Task).all()
+        # 按创建时间倒序排序
+        tasks = db.query(Task).order_by(Task.created_at.desc()).all()
+        
         # 准备表头和数据
         headers = ["ID", "Name", "Status", "Results", "Created", "Updated"]
         data = []

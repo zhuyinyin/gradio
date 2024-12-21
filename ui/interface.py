@@ -29,7 +29,7 @@ def create_ui(training_manager):
                             placeholder="请输入不重复的任务名称"
                         )
                         
-                        # 使用 Accordion ����钮
+                        # 使用 Accordion 
                         with gr.Accordion("高级参数设置", open=False) as advanced_settings:
                             advanced_inputs = {}
                             for param, value in Config.ADVANCED_SETTINGS.items():
@@ -55,12 +55,11 @@ def create_ui(training_manager):
                         with gr.Row():
                             image_upload = gr.File(
                                 label="上传文件",
-                                file_types=["image", "yaml", "yml"],
+                                file_types=["image", "yaml", "yml", "txt"],
                                 file_count="multiple",
                                 type="filepath",
                                 height=100,
                                 scale=1,
-                                elem_classes="file-upload",
                                 interactive=True
                             )
                         
@@ -81,7 +80,7 @@ def create_ui(training_manager):
                             start_training_btn = gr.Button(
                                 "提交训练任务",
                                 variant="primary",  # 使用主要样式
-                                size="lg",         # ����按钮
+                                size="lg",         # 按钮
                                 scale=1
                             )
                         with gr.Row():
@@ -95,17 +94,9 @@ def create_ui(training_manager):
             # 任务列表 Tab
             with gr.Tab("训练任务表"):
                 with gr.Column():
-                    task_list_data = get_task_list()
-                    task_list_output = gr.Dataframe(
-                        value=task_list_data["data"],
-                        headers=task_list_data["headers"],
-                        interactive=False,  # 设置为不可交互
-                        wrap=True,
-                        height=400,
-                        row_count=10
-                    )
-
-                    # 结果图片展示
+                    gr.Markdown("## 训练任务列表")
+                    
+                    # 结果图片展示 - 移到表格前面
                     with gr.Group(visible=False) as results_gallery_box:
                         with gr.Row():
                             gr.Markdown("### 训练结果图片")
@@ -126,6 +117,35 @@ def create_ui(training_manager):
                                 size="sm",
                                 variant="secondary"
                             )
+
+                    # 任务列表表格
+                    task_list_data = get_task_list()
+                    task_list_output = gr.Dataframe(
+                        value=task_list_data["data"],
+                        headers=task_list_data["headers"],
+                        interactive=False,      # 设置为不可交互
+                        wrap=True,             # 允许文本换行
+                        height=400,            # 固定高度
+                        datatype=[             # 指定每列的数据类型
+                            "number",          # ID
+                            "str",             # Name
+                            "str",             # Status
+                            "str",             # Results
+                            "str",             # Created
+                            "str"              # Updated
+                        ],
+                        column_widths=[        # 设置列宽
+                            "80px",            # ID
+                            "200px",           # Name
+                            "120px",           # Status
+                            "120px",           # Results
+                            "180px",           # Created
+                            "180px"            # Updated
+                        ],
+                        row_count=(10, "dynamic"),  # 每页显示10行
+                        line_breaks=True,      # 允许换行
+                        min_width=160          # 最小宽度
+                    )
 
         # 图片处理函数
         def process_images(files):
