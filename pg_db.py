@@ -18,6 +18,7 @@ class TaskStatus(enum.Enum):
     """任务状态枚举类"""
     PENDING = "pending"     # 等待中
     TRAINING = "training"   # 训练中
+    RUN_BEFORE = "run_before" # 运行前
     RUNNING = "running"     # 运行中
     COMPLETED = "completed" # 已完成
     FAILED = "failed"       # 失败

@@ -2,7 +2,12 @@ import os
 
 class Config:
     """应用配置类"""
-    TOOLKIT_URL = os.getenv('TOOLKIT_URL', 'http://172.25.0.1:7861')
+    TOOLKIT_URL = os.getenv('TOOLKIT_URL', 'http://js1.blockelite.cn:27865')
+    GET_FILES_URL = os.getenv('GET_FILES_URL', 'http://120.79.187.70:8000')  # get_files 服务的URL
+    DATABASE_URL = os.getenv(
+        'DATABASE_URL',
+        'postgresql://gradio:gradioEVENT12@127.0.0.1:5432/postgres'
+    )
     VALID_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png']
     VALID_CONFIG_EXTENSIONS = ['.yaml', '.yml']
     MONITOR_INTERVAL = 10  # 监控间隔时间（秒）
