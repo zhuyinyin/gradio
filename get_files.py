@@ -4,6 +4,7 @@
 @Author : Yann Zhu
 @Date : 2024/12/21 09:43
 """
+# pip install fastapi uvicorn sqlalchemy psycopg2-binary==2.9.9 -i https://pypi.tuna.tsinghua.edu.cn/simple
 import threading
 import requests
 import zipfile
