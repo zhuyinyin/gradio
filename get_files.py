@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from typing import Dict
 from pydantic import BaseModel
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -48,7 +48,7 @@ def get_file(database_url: str, task_id: int, toolkit_url: str):
             try:
                 # 查询任务信息
                 task = session.execute(
-                    "SELECT name FROM tasks WHERE id = :task_id",
+                    text("SELECT name FROM tasks WHERE id = :task_id"),
                     {"task_id": task_id}
                 ).first()
                 
@@ -83,11 +83,11 @@ def get_file(database_url: str, task_id: int, toolkit_url: str):
                     
                     # 更新任务状态为 running
                     session.execute(
-                        """
+                        text("""
                         UPDATE tasks 
                         SET status = 'running'
                         WHERE id = :task_id
-                        """,
+                        """),
                         {"task_id": task_id}
                     )
                     session.commit()
