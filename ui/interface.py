@@ -140,7 +140,7 @@ def create_ui(training_manager):
                     with gr.Column(scale=1):
                         gr.Markdown("## 训练结果图片", elem_classes="section-header")
                         results_gallery = gr.Gallery(
-                            label=None,            # 移除标签
+                            label="训练结果",            # 移除标签
                             columns=[1, 2],
                             height=550,            # 与表格高度一致
                             preview=True,
