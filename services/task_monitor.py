@@ -26,19 +26,22 @@ class TaskMonitor:
                     
                     # 准备请求数据
                     request_data = {
-                        "database_url": Config.DATABASE_URL,
+                        "database_url": Config.DATABASE_URL.replace("db", Config.DB_HOST),  # 使用配置中的数据库主机
                         "task_id": task.id,
                         "toolkit_url": Config.TOOLKIT_URL
                     }
                     
-                    # 发送 HTTP 请求���不等待响应
-                    await self.session.post(
-                        get_files_url,
-                        json=request_data,
-                        headers={'Content-Type': 'application/json'},
-                        timeout=60
-                    )
-                    logger.info(f"已发送请求到 get_files 服务处理任务 {task.id}")
+                    # 发送 HTTP 请求但不等待响应
+                    try:
+                        await self.session.post(
+                            get_files_url,
+                            json=request_data,
+                            headers={'Content-Type': 'application/json'},
+                            timeout=60
+                        )
+                        logger.info(f"已发送请求到 get_files 服务处理任务 {task.id}")
+                    except Exception as e:
+                        logger.error(f"发送请求到 get_files 服务时出错: {str(e)}")
                             
                 except Exception as e:
                     logger.error(f"处理 RUN_BEFORE 状态时出错: {str(e)}")

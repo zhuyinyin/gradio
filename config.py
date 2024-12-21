@@ -2,11 +2,12 @@ import os
 
 class Config:
     """应用配置类"""
-    TOOLKIT_URL = os.getenv('TOOLKIT_URL', 'http://js1.blockelite.cn:27865')
-    GET_FILES_URL = os.getenv('GET_FILES_URL', 'http://120.79.187.70:8000')  # get_files 服务的URL
+    TOOLKIT_URL = os.getenv('TOOLKIT_URL', 'http://172.25.0.1:7861')
+    GET_FILES_URL = os.getenv('GET_FILES_URL', 'http://localhost:8000')
+    DB_HOST = os.getenv('DB_HOST', '120.79.187.70')  # 添加数据库主机配置
     DATABASE_URL = os.getenv(
         'DATABASE_URL',
-        'postgresql://gradio:gradioEVENT12@127.0.0.1:5432/postgres'
+        'postgresql://gradio:gradioEVENT12@db:5432/postgres'
     )
     VALID_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png']
     VALID_CONFIG_EXTENSIONS = ['.yaml', '.yml']
