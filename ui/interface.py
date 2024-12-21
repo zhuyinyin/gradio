@@ -10,7 +10,17 @@ from sqlalchemy.orm import Session
 
 def create_ui(training_manager):
     """创建 Gradio 界面"""
-    with gr.Blocks() as demo:
+    with gr.Blocks(css="""
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #374151;
+        }
+        .result-gallery {
+            margin-top: 0.5rem;
+        }
+    """) as demo:
         # 使用 Tabs 替代手动页面切换
         with gr.Tabs() as tabs:
             # 主页 Tab
@@ -93,59 +103,52 @@ def create_ui(training_manager):
 
             # 任务列表 Tab
             with gr.Tab("训练任务表"):
-                with gr.Column():
-                    gr.Markdown("## 训练任务列表")
+                # 使用 Row 布局，左侧表格，右侧图片
+                with gr.Row():
+                    # 左侧任务列表表格
+                    with gr.Column(scale=2):
+                        gr.Markdown("## 训练任务列表", elem_classes="section-header")
+                        task_list_data = get_task_list()
+                        task_list_output = gr.Dataframe(
+                            value=task_list_data["data"],
+                            headers=task_list_data["headers"],
+                            interactive=False,      # 设置为不可交互
+                            wrap=True,             # 允许文本换行
+                            height=550,            # 设置高度
+                            datatype=[             # 指定每列的数据类型
+                                "number",          # ID
+                                "str",             # Name
+                                "str",             # Status
+                                "str",             # Results
+                                "str",             # Created
+                                "str"              # Updated
+                            ],
+                            column_widths=[        # 设置列宽
+                                "80px",            # ID
+                                "200px",           # Name
+                                "120px",           # Status
+                                "120px",           # Results
+                                "180px",           # Created
+                                "180px"            # Updated
+                            ],
+                            row_count=(10, "dynamic"),  # 每页显示10行
+                            line_breaks=True,      # 允许换行
+                            min_width=160          # 最小宽度
+                        )
                     
-                    # 结果图片展示 - 移到表格前面
-                    with gr.Group(visible=False) as results_gallery_box:
-                        with gr.Row():
-                            gr.Markdown("### 训练结果图片")
-                        with gr.Row():
-                            results_gallery = gr.Gallery(
-                                label="训练结果图片",
-                                columns=[2, 3],
-                                height="auto",
-                                preview=True,
-                                show_share_button=True,
-                                show_download_button=True,
-                                allow_preview=True,
-                                elem_classes="result-gallery"
-                            )
-                        with gr.Row():
-                            close_gallery_btn = gr.Button(
-                                "关闭",
-                                size="sm",
-                                variant="secondary"
-                            )
-
-                    # 任务列表表格
-                    task_list_data = get_task_list()
-                    task_list_output = gr.Dataframe(
-                        value=task_list_data["data"],
-                        headers=task_list_data["headers"],
-                        interactive=False,      # 设置为不可交互
-                        wrap=True,             # 允许文本换行
-                        height=400,            # 固定高度
-                        datatype=[             # 指定每列的数据类型
-                            "number",          # ID
-                            "str",             # Name
-                            "str",             # Status
-                            "str",             # Results
-                            "str",             # Created
-                            "str"              # Updated
-                        ],
-                        column_widths=[        # 设置列宽
-                            "80px",            # ID
-                            "200px",           # Name
-                            "120px",           # Status
-                            "120px",           # Results
-                            "180px",           # Created
-                            "180px"            # Updated
-                        ],
-                        row_count=(10, "dynamic"),  # 每页显示10行
-                        line_breaks=True,      # 允许换行
-                        min_width=160          # 最小宽度
-                    )
+                    # 右侧图片展示区域
+                    with gr.Column(scale=1):
+                        gr.Markdown("## 训练结果图片", elem_classes="section-header")
+                        results_gallery = gr.Gallery(
+                            label=None,            # 移除标签
+                            columns=[1, 2],
+                            height=550,            # 与表格高度一致
+                            preview=True,
+                            show_share_button=True,
+                            show_download_button=True,
+                            allow_preview=True,
+                            elem_classes="result-gallery"
+                        )
 
         # 图片处理函数
         def process_images(files):
@@ -177,17 +180,17 @@ def create_ui(training_manager):
         def view_task_results(evt: gr.SelectData):
             """查看任务结果"""
             try:
-                # 获取选中行的数据
                 row_index = evt.index[0]    # 行索引
                 col_index = evt.index[1]    # 列索引
                 print(f"选中行: {row_index}, 列: {col_index}, 值: {evt.value}")
+                
                 # 从任务列表中获取当前行的数据
                 task_list_data = get_task_list()
                 try:
                     row_data = task_list_data["data"][row_index]
                 except IndexError:
                     print(f"IndexError: 行索引超出范围: {row_index}")
-                    return [gr.update(visible=False), None]
+                    return None  # 只返回图片列表
                 
                 task_id = int(row_data[0])      # ID 在第一列
                 result_text = row_data[3]       # Results 在第四列
@@ -196,7 +199,7 @@ def create_ui(training_manager):
                 
                 if not result_text.startswith("✅"):
                     print("该任务无结果可查看")
-                    return [gr.update(visible=False), None]
+                    return None  # 只返回图片列表
 
                 db = next(get_db())
                 try:
@@ -204,17 +207,14 @@ def create_ui(training_manager):
                     if task and task.result_images:
                         image_urls = [img["url"] for img in task.result_images]
                         print(f"找到 {len(image_urls)} 张结果图片")
-                        return [
-                            gr.update(visible=True),  # 显示图片展示区
-                            image_urls                # 更新图片列表
-                        ]
+                        return image_urls  # 只返回图片列表
                 finally:
                     db.close()
             except Exception as e:
                 print(f"处理任务结果时出错: {str(e)}")
                 import traceback
                 traceback.print_exc()
-            return [gr.update(visible=False), None]
+            return None  # 只返回图片列表
 
         # 事件处理函数
         async def submit_training(*args):
@@ -269,13 +269,13 @@ def create_ui(training_manager):
 
         task_list_output.select(
             fn=view_task_results,
-            outputs=[results_gallery_box, results_gallery]
+            outputs=results_gallery  # 只更新图片列表
         )
 
-        close_gallery_btn.click(
-            fn=lambda: [gr.update(visible=False), None],
-            outputs=[results_gallery_box, results_gallery]
-        )
+        # close_gallery_btn.click(
+        #     fn=lambda: [gr.update(visible=False), None],
+        #     outputs=[results_gallery_box, results_gallery]
+        # )
 
         start_training_btn.click(
             fn=submit_training,
